@@ -1,0 +1,30 @@
+{
+  "name": "@dogapp/web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint app/ lib/",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@dogapp/types": "workspace:*",
+    "@dogapp/utils": "workspace:*",
+    "@tanstack/react-query": "^5.68.0",
+    "next": "^14.2.24",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.2"
+  }
+}

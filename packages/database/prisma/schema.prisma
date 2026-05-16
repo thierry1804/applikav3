@@ -1,0 +1,570 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+enum UserRole {
+  owner
+  vet
+  admin
+}
+
+enum DogSex {
+  male
+  female
+}
+
+enum ReminderType {
+  vaccine
+  deworming
+  antiparasitic
+  custom
+}
+
+enum MedicationDoseStatus {
+  taken
+  missed
+  skipped
+}
+
+enum HygieneCareType {
+  teeth
+  nails
+  bath
+  brushing
+  grooming
+  ears
+  custom
+}
+
+enum MealFoodType {
+  kibble
+  wet
+  barf
+  mixed
+}
+
+enum CheckupRecommendation {
+  good
+  watch
+  consult
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  name         String
+  avatarUrl    String?   @map("avatar_url")
+  role         UserRole  @default(owner)
+  isBreeder    Boolean   @default(false) @map("is_breeder")
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  dogs          Dog[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  deviceTokens  DeviceToken[]
+  favoriteVets  FavoriteVet[]
+  posts         Post[]
+  groups        Group[]        @relation("GroupCreator")
+  groupMembers  GroupMember[]
+  events        Event[]
+  sharingLinks  SharingLink[]  @relation("SharingLinkCreator")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Dog {
+  id          String    @id @default(cuid())
+  ownerId     String    @map("owner_id")
+  name        String
+  breed       String
+  birthDate   DateTime  @map("birth_date") @db.Date
+  sex         DogSex
+  sterilized  Boolean   @default(false)
+  weightKg    Decimal?  @map("weight_kg") @db.Decimal(5, 2)
+  lofNumber   String?   @map("lof_number")
+  lomadNumber String?   @map("lomad_number")
+  chipNumber  String?   @map("chip_number")
+  photoUrl    String?   @map("photo_url")
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  owner           User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  healthRecords   HealthRecord[]
+  reminders       Reminder[]
+  symptomLogs     SymptomLog[]
+  medications     Medication[]
+  weightLogs      WeightLog[]
+  hygieneCares    HygieneCare[]
+  activities      Activity[]
+  mealPlans       MealPlan[]
+  heatCycles      HeatCycle[]
+  reproductions   Reproduction[]
+  checkupResults  CheckupResult[]
+  sharingLinks    SharingLink[]
+  posts           Post[]
+
+  @@index([ownerId])
+  @@map("dogs")
+}
+
+model Breed {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  weightRanges BreedWeightRange[]
+
+  @@map("breeds")
+}
+
+model BreedWeightRange {
+  id           String  @id @default(cuid())
+  breedId      String  @map("breed_id")
+  minAgeMonths Int     @map("min_age_months")
+  maxAgeMonths Int     @map("max_age_months")
+  minWeightKg  Decimal @map("min_weight_kg") @db.Decimal(5, 2)
+  maxWeightKg  Decimal @map("max_weight_kg") @db.Decimal(5, 2)
+
+  breed Breed @relation(fields: [breedId], references: [id], onDelete: Cascade)
+
+  @@index([breedId])
+  @@map("breed_weight_ranges")
+}
+
+model HealthRecord {
+  id        String    @id @default(cuid())
+  dogId     String    @map("dog_id")
+  vetName   String    @map("vet_name")
+  visitDate DateTime  @map("visit_date") @db.Date
+  reason    String
+  diagnosis String?
+  notes     String?
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  dog         Dog          @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+
+  @@index([dogId])
+  @@index([visitDate])
+  @@map("health_records")
+}
+
+model Reminder {
+  id              String       @id @default(cuid())
+  dogId           String       @map("dog_id")
+  type            ReminderType
+  label           String
+  dueDate         DateTime     @map("due_date") @db.Date
+  recurrenceDays  Int?         @map("recurrence_days")
+  lastDoneAt      DateTime?    @map("last_done_at") @db.Date
+  isActive        Boolean      @default(true) @map("is_active")
+  deletedAt       DateTime?    @map("deleted_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  dog Dog @relation(fields: [dogId], references: [id], onDelete: Cascade)
+
+  @@index([dogId])
+  @@index([dueDate])
+  @@index([isActive])
+  @@map("reminders")
+}
+
+model SymptomLog {
+  id        String    @id @default(cuid())
+  dogId     String    @map("dog_id")
+  loggedAt  DateTime  @map("logged_at")
+  symptoms  Json
+  severity  Int
+  notes     String?
+  photoUrl  String?   @map("photo_url")
+  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  dog         Dog          @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+
+  @@index([dogId])
+  @@index([loggedAt])
+  @@map("symptom_logs")
+}
+
+model Medication {
+  id                  String    @id @default(cuid())
+  dogId               String    @map("dog_id")
+  name                String
+  dosage              String
+  frequency           Json
+  startDate           DateTime  @map("start_date") @db.Date
+  endDate             DateTime? @map("end_date") @db.Date
+  stockCount          Int?      @map("stock_count")
+  stockAlertThreshold Int?      @map("stock_alert_threshold")
+  isActive            Boolean   @default(true) @map("is_active")
+  deletedAt           DateTime? @map("deleted_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  dog      Dog                 @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  doseLogs MedicationDoseLog[]
+
+  @@index([dogId])
+  @@index([isActive])
+  @@map("medications")
+}
+
+model MedicationDoseLog {
+  id              String               @id @default(cuid())
+  medicationId    String               @map("medication_id")
+  scheduledAt     DateTime             @map("scheduled_at")
+  takenAt         DateTime?            @map("taken_at")
+  status          MedicationDoseStatus
+  idempotencyKey  String?              @unique @map("idempotency_key")
+  createdAt       DateTime             @default(now()) @map("created_at")
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+
+  @@index([medicationId])
+  @@index([scheduledAt])
+  @@map("medication_dose_logs")
+}
+
+model WeightLog {
+  id        String   @id @default(cuid())
+  dogId     String   @map("dog_id")
+  weighedAt DateTime @map("weighed_at") @db.Date
+  weightKg  Decimal  @map("weight_kg") @db.Decimal(5, 2)
+  idempotencyKey String? @unique @map("idempotency_key")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  dog Dog @relation(fields: [dogId], references: [id], onDelete: Cascade)
+
+  @@index([dogId])
+  @@index([weighedAt])
+  @@map("weight_logs")
+}
+
+model HygieneCare {
+  id             String          @id @default(cuid())
+  dogId          String          @map("dog_id")
+  careType       HygieneCareType @map("care_type")
+  label          String?
+  frequencyDays  Int             @map("frequency_days")
+  lastDoneAt     DateTime?       @map("last_done_at") @db.Date
+  nextDueAt      DateTime        @map("next_due_at") @db.Date
+  isActive       Boolean         @default(true) @map("is_active")
+  deletedAt      DateTime?       @map("deleted_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  dog Dog @relation(fields: [dogId], references: [id], onDelete: Cascade)
+
+  @@index([dogId])
+  @@index([nextDueAt])
+  @@index([isActive])
+  @@map("hygiene_cares")
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  dogId       String   @map("dog_id")
+  startedAt   DateTime @map("started_at")
+  durationMin Int      @map("duration_min")
+  distanceKm  Decimal? @map("distance_km") @db.Decimal(6, 2)
+  caloriesEst Int?     @map("calories_est")
+  gpsTrack    Json?    @map("gps_track")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  dog Dog @relation(fields: [dogId], references: [id], onDelete: Cascade)
+
+  @@index([dogId])
+  @@index([startedAt])
+  @@map("activities")
+}
+
+model MealPlan {
+  id             String       @id @default(cuid())
+  dogId          String       @map("dog_id")
+  foodType       MealFoodType @map("food_type")
+  mealsPerDay    Int          @map("meals_per_day")
+  gramsPerMeal   Decimal      @map("grams_per_meal") @db.Decimal(6, 2)
+  caloriesPerDay Int?         @map("calories_per_day")
+  notes          String?
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  dog Dog @relation(fields: [dogId], references: [id], onDelete: Cascade)
+
+  @@index([dogId])
+  @@map("meal_plans")
+}
+
+model HeatCycle {
+  id           String    @id @default(cuid())
+  dogId        String    @map("dog_id")
+  startDate    DateTime  @map("start_date") @db.Date
+  endDate      DateTime? @map("end_date") @db.Date
+  durationDays Int?      @map("duration_days")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  dog           Dog            @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  reproductions Reproduction[]
+
+  @@index([dogId])
+  @@map("heat_cycles")
+}
+
+model Reproduction {
+  id            String    @id @default(cuid())
+  dogId         String    @map("dog_id")
+  heatCycleId   String?   @map("heat_cycle_id")
+  matingDate    DateTime  @map("mating_date") @db.Date
+  sireName      String?   @map("sire_name")
+  sireChip      String?   @map("sire_chip")
+  expectedBirth DateTime? @map("expected_birth") @db.Date
+  actualBirth   DateTime? @map("actual_birth") @db.Date
+  pupsCount     Int?      @map("pups_count")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  dog       Dog        @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  heatCycle HeatCycle? @relation(fields: [heatCycleId], references: [id])
+
+  @@index([dogId])
+  @@map("reproductions")
+}
+
+model CheckupQuestion {
+  id           String   @id @default(cuid())
+  questionKey  String   @unique @map("question_key")
+  label        String
+  minAgeMonths Int?     @map("min_age_months")
+  maxAgeMonths Int?     @map("max_age_months")
+  sortOrder    Int      @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("checkup_questions")
+}
+
+model CheckupResult {
+  id                   String                @id @default(cuid())
+  dogId                String                @map("dog_id")
+  takenAt              DateTime              @map("taken_at")
+  score                Int
+  recommendation       CheckupRecommendation
+  answers              Json
+  savedToHealthRecord  Boolean               @default(false) @map("saved_to_health_record")
+  createdAt            DateTime              @default(now()) @map("created_at")
+
+  dog Dog @relation(fields: [dogId], references: [id], onDelete: Cascade)
+
+  @@index([dogId])
+  @@map("checkup_results")
+}
+
+model FavoriteVet {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  placeId    String   @map("place_id")
+  name       String
+  address    String?
+  phone      String?
+  latitude   Decimal  @db.Decimal(10, 7)
+  longitude  Decimal  @db.Decimal(10, 7)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, placeId])
+  @@index([userId])
+  @@map("favorite_vets")
+}
+
+model SharingLink {
+  id          String   @id @default(cuid())
+  dogId       String   @map("dog_id")
+  createdById String   @map("created_by_id")
+  token       String   @unique
+  expiresAt   DateTime @map("expires_at")
+  sections    Json
+  accessCount Int      @default(0) @map("access_count")
+  maxAccesses Int      @default(10) @map("max_accesses")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  dog      Dog                 @relation(fields: [dogId], references: [id], onDelete: Cascade)
+  createdBy User               @relation("SharingLinkCreator", fields: [createdById], references: [id])
+  accesses SharingLinkAccess[]
+
+  @@index([dogId])
+  @@index([token])
+  @@map("sharing_links")
+}
+
+model SharingLinkAccess {
+  id         String   @id @default(cuid())
+  linkId     String   @map("link_id")
+  accessedAt DateTime @default(now()) @map("accessed_at")
+  ipPartial  String   @map("ip_partial")
+
+  link SharingLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId])
+  @@map("sharing_link_accesses")
+}
+
+model Post {
+  id         String   @id @default(cuid())
+  authorId   String   @map("author_id")
+  dogId      String?  @map("dog_id")
+  groupId    String?  @map("group_id")
+  content    String
+  imageUrls  Json?    @map("image_urls")
+  likesCount Int      @default(0) @map("likes_count")
+  isDeleted  Boolean  @default(false) @map("is_deleted")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  dog    Dog?   @relation(fields: [dogId], references: [id])
+  group  Group? @relation(fields: [groupId], references: [id])
+
+  @@index([authorId])
+  @@index([groupId])
+  @@map("posts")
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  createdById String   @map("created_by_id")
+  memberCount Int      @default(0) @map("member_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy User          @relation("GroupCreator", fields: [createdById], references: [id])
+  members   GroupMember[]
+  posts     Post[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  groupId  String   @map("group_id")
+  userId   String   @map("user_id")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@map("group_members")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  eventDate   DateTime @map("event_date") @db.Date
+  location    String
+  createdById String   @map("created_by_id")
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([eventDate])
+  @@map("events")
+}
+
+model Attachment {
+  id             String   @id @default(cuid())
+  healthRecordId String?  @map("health_record_id")
+  symptomLogId   String?  @map("symptom_log_id")
+  fileKey        String   @map("file_key")
+  fileName       String   @map("file_name")
+  fileSizeBytes  Int      @map("file_size_bytes")
+  mimeType       String   @map("mime_type")
+  uploadedAt     DateTime @default(now()) @map("uploaded_at")
+
+  healthRecord HealthRecord? @relation(fields: [healthRecordId], references: [id])
+  symptomLog   SymptomLog?   @relation(fields: [symptomLogId], references: [id])
+
+  @@index([healthRecordId])
+  @@index([symptomLogId])
+  @@map("attachments")
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  action          String
+  entityType      String   @map("entity_type")
+  entityId        String   @map("entity_id")
+  retentionUntil  DateTime @map("retention_until")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model FeatureFlag {
+  key         String   @id
+  isEnabled   Boolean  @default(false) @map("is_enabled")
+  description String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  platform  String
+  isValid   Boolean  @default(true) @map("is_valid")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
+}

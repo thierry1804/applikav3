@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "DogApp",
+    "slug": "dogapp",
+    "version": "1.0.0",
+    "scheme": "dogapp",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": { "supportsTablet": true, "bundleIdentifier": "io.dogapp.mobile" },
+    "android": { "package": "io.dogapp.mobile" },
+    "plugins": ["expo-router"]
+  }
+}
