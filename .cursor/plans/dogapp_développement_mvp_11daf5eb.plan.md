@@ -19,10 +19,10 @@ todos:
     status: completed
   - id: users-dogs
     content: Phase 0.5–0.6 — Modules users et dogs avec DogOwnerGuard + R2 photos
-    status: in_progress
+    status: completed
   - id: ci-cd
     content: Phase 0.7 — GitHub Actions CI + Dockerfile API + template PR
-    status: pending
+    status: completed
   - id: f01-health-records
     content: Phase 1.1 — F01 Carnet santé (backend → mobile → web → tests)
     status: pending
