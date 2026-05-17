@@ -73,14 +73,14 @@ const baseSymptomLog = {
 } as unknown as SymptomLog;
 
 // SAFE: E2E test fixture
-const baseQuestion = (id: string, text: string, sortOrder: number): CheckupQuestion => ({
+const baseQuestion = (id: string, questionKey: string, sortOrder: number): CheckupQuestion => ({
   id,
-  text,
+  questionKey,
+  label: questionKey,
   sortOrder,
   minAgeMonths: null,
   maxAgeMonths: null,
   createdAt: now,
-  updatedAt: now,
 });
 
 // SAFE: E2E test fixture

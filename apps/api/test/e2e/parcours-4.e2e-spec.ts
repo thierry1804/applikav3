@@ -136,8 +136,7 @@ describe('Parcours 4 — Pesée → Courbe → Alerte hors plage', () => {
       id: 'br-golden',
       name: 'Golden Retriever',
       createdAt: now,
-      updatedAt: now,
-    });
+    } as never);
     // SAFE: E2E test fixture — breed range: 25–40 kg; 55 kg exceeds max
     prisma.breedWeightRange.findFirst.mockResolvedValue({
       id: 'bwr-1',
@@ -146,9 +145,7 @@ describe('Parcours 4 — Pesée → Courbe → Alerte hors plage', () => {
       maxAgeMonths: 200,
       minWeightKg: 25 as unknown as BreedWeightRange['minWeightKg'],
       maxWeightKg: 40 as unknown as BreedWeightRange['maxWeightKg'],
-      createdAt: now,
-      updatedAt: now,
-    });
+    } as never);
     prisma.auditLog.create.mockResolvedValue(stubAuditLog);
 
     const res = await app.inject({

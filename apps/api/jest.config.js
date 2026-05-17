@@ -2,8 +2,10 @@
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
-  testRegex: '.*\\.spec\\.ts$',
+  testRegex: '.*\\.(e2e-)?spec\\.ts$',
   transform: { '^.+\\.(t|j)s$': 'ts-jest' },
+  setupFiles: ['./test/setup.ts'],
+  testTimeout: 60000,
   collectCoverageFrom: [
     'src/**/*.service.ts',
     'src/common/**/*.ts',
