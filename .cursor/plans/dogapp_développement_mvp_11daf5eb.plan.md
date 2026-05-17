@@ -7,13 +7,13 @@ todos:
     status: completed
   - id: monorepo-init
     content: Phase 0.1 — Monorepo pnpm/Turbo, packages types/utils, apps squelettes, tooling ESLint/Husky
-    status: in_progress
+    status: completed
   - id: prisma-schema
     content: Phase 0.2 — schema.prisma complet, migration init, seed (races, flags, référentiels)
-    status: pending
+    status: completed
   - id: nestjs-shell
     content: Phase 0.3 — NestJS Fastify, common (guards, interceptors, filters, Swagger, BullMQ, R2)
-    status: pending
+    status: in_progress
   - id: auth-module
     content: Phase 0.4 — Module auth JWT + refresh rotation + tests
     status: pending

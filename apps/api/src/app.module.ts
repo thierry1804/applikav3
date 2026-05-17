@@ -17,6 +17,7 @@ import { HealthModule } from './health/health.module';
 import { IdempotencyModule } from './idempotency/idempotency.module';
 import { NotificationModule } from './notifications/notification.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QueueModule } from './queue/queue.module';
 import { StorageModule } from './storage/storage.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { UsersModule } from './users/users.module';
@@ -30,6 +31,7 @@ import { VetsModule } from './vets/vets.module';
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
+    QueueModule,
     IdempotencyModule,
     AuditModule,
     StorageModule,
