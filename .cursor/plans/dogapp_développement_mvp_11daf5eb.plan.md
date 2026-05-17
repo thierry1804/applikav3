@@ -28,10 +28,10 @@ todos:
     status: completed
   - id: f02-reminders
     content: Phase 1.2 — F02 Rappels + jobs BullMQ + idempotence
-    status: in_progress
+    status: completed
   - id: f03-f12-mvp
     content: Phase 1.3–1.9 — F03, F04, F05, F08, F10, F12, notifications push
-    status: pending
+    status: completed
 isProject: false
 ---
 
