@@ -13,13 +13,13 @@ todos:
     status: completed
   - id: nestjs-shell
     content: Phase 0.3 — NestJS Fastify, common (guards, interceptors, filters, Swagger, BullMQ, R2)
-    status: in_progress
+    status: completed
   - id: auth-module
     content: Phase 0.4 — Module auth JWT + refresh rotation + tests
-    status: pending
+    status: completed
   - id: users-dogs
     content: Phase 0.5–0.6 — Modules users et dogs avec DogOwnerGuard + R2 photos
-    status: pending
+    status: in_progress
   - id: ci-cd
     content: Phase 0.7 — GitHub Actions CI + Dockerfile API + template PR
     status: pending
