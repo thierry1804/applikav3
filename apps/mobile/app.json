@@ -9,6 +9,6 @@
     "newArchEnabled": true,
     "ios": { "supportsTablet": true, "bundleIdentifier": "io.dogapp.mobile" },
     "android": { "package": "io.dogapp.mobile" },
-    "plugins": ["expo-router"]
+    "plugins": ["expo-router", "expo-notifications"]
   }
 }
