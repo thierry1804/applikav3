@@ -20,6 +20,10 @@ export class SymptomRepository {
     return this.prisma.symptomLog.create({ data });
   }
 
+  async update(id: string, data: Prisma.SymptomLogUpdateInput): Promise<SymptomLog> {
+    return this.prisma.symptomLog.update({ where: { id }, data });
+  }
+
   async softDelete(id: string): Promise<SymptomLog> {
     return this.prisma.symptomLog.update({
       where: { id },

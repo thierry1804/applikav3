@@ -4,6 +4,7 @@ import type { SymptomLog } from '@prisma/client';
 import { AuditService } from '../../audit/audit.service';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { sliceForPagination, toPaginatedMeta } from '../../common/utils/response.util';
+import { StorageService } from '../../storage/storage.service';
 import { CreateSymptomDto } from './dto/create-symptom.dto';
 import { SymptomRepository } from './symptom.repository';
 
@@ -12,6 +13,7 @@ export class SymptomService {
   constructor(
     private readonly repository: SymptomRepository,
     private readonly auditService: AuditService,
+    private readonly storage: StorageService,
   ) {}
 
   async findAll(
@@ -36,6 +38,23 @@ export class SymptomService {
     });
     await this.auditService.log(userId, 'CREATE_SYMPTOM', 'SymptomLog', log.id);
     return this.toResponse(log);
+  }
+
+  async getPhotoUploadUrl(
+    ownerId: string,
+    dogId: string,
+    fileName: string,
+    contentType: string,
+  ): Promise<{ uploadUrl: string; key: string }> {
+    const key = this.storage.buildKey('dev', ownerId, dogId, 'symptoms', fileName);
+    const uploadUrl = await this.storage.getUploadUrl(key, contentType);
+    return { uploadUrl, key };
+  }
+
+  async confirmPhoto(symptomId: string, key: string): Promise<SymptomLogType> {
+    const photoUrl = await this.storage.getReadUrl(key);
+    const updated = await this.repository.update(symptomId, { photoUrl });
+    return this.toResponse(updated);
   }
 
   async remove(id: string, userId: string): Promise<void> {
