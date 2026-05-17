@@ -1,52 +1,98 @@
 ---
 name: DogApp développement MVP
-overview: 'Démarrer DogApp depuis zéro (specs uniquement) en suivant l’ordre impératif du [plan de développement](DogApp_Specs/05_plan_developpement.md) §16 : fondations monorepo + backend, puis santé MVP, avec création préalable des comptes Neon / Upstash / R2.'
+overview: "Lot 0 terminé (~95 %). Lot 1 MVP ~70 % : API + mobile avancés, web squelettes, infra cloud et DoD (80 % coverage, E2E) restants. Voir rapport d'audit § État actuel."
 todos:
   - id: infra-accounts
-    content: Phase 0.0 — Créer comptes Neon, Upstash, R2 + .env.example et .env locaux
-    status: completed
+    content: Phase 0.0 — Templates .env.example OK ; comptes Neon / Upstash / R2 à créer par le dev
+    status: in_progress
   - id: monorepo-init
-    content: Phase 0.1 — Monorepo pnpm/Turbo, packages types/utils, apps squelettes, tooling ESLint/Husky
+    content: Phase 0.1 — Monorepo pnpm/Turbo, packages types/utils, tooling ESLint/Husky
     status: completed
   - id: prisma-schema
-    content: Phase 0.2 — schema.prisma complet, migration init, seed (races, flags, référentiels)
+    content: Phase 0.2 — schema.prisma + migration init + seed
     status: completed
   - id: nestjs-shell
-    content: Phase 0.3 — NestJS Fastify, common (guards, interceptors, filters, Swagger, BullMQ, R2)
+    content: Phase 0.3 — NestJS Fastify, common, Swagger, BullMQ, R2 (presigned)
     status: completed
   - id: auth-module
-    content: Phase 0.4 — Module auth JWT + refresh rotation + tests
+    content: Phase 0.4 — Auth JWT + refresh rotation + tests
     status: completed
   - id: users-dogs
-    content: Phase 0.5–0.6 — Modules users et dogs avec DogOwnerGuard + R2 photos
+    content: Phase 0.5–0.6 — Users + Dogs + DogOwnerGuard + tests
     status: completed
   - id: ci-cd
     content: Phase 0.7 — GitHub Actions CI + Dockerfile API + template PR
     status: completed
   - id: f01-health-records
-    content: Phase 1.1 — F01 Carnet santé (backend → mobile → web → tests)
-    status: completed
+    content: Phase 1.1 — F01 API + mobile React Query ; web = page statique
+    status: in_progress
   - id: f02-reminders
-    content: Phase 1.2 — F02 Rappels + jobs BullMQ + idempotence
+    content: Phase 1.2 — F02 API + BullMQ J-30/14/7/1 + mobile
     status: completed
   - id: f03-f12-mvp
-    content: Phase 1.3–1.9 — F03, F04, F05, F08, F10, F12, notifications push
-    status: completed
+    content: Phase 1.3–1.9 — Backends + écrans mobile ; couverture <80%, web non branché, E2E absents
+    status: in_progress
+  - id: quality-gates
+    content: Couverture services ≥80%, build mobile CI, tests vets/notifications, E2E parcours 1
+    status: pending
+  - id: web-mvp-ui
+    content: Brancher le web sur l'API (React Query) pour F01–F12
+    status: pending
+  - id: phase-2-enriched
+    content: Lot 2 — F06, F07, F13, dashboard, i18n
+    status: pending
 isProject: false
 ---
 
 # Plan de développement DogApp — démarrage progressif
 
-## État actuel
+## État actuel (audit — 16 mai 2026)
 
-| Élément                    | Statut                                                                                                                                          |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Code applicatif            | **Absent** — seuls [`CLAUDE.md`](CLAUDE.md) et [`DogApp_Specs/`](DogApp_Specs/)                                                                 |
-| Git                        | Initialisé, **aucun commit**                                                                                                                    |
-| Référence d’implémentation | [`DogApp_Specs/05_plan_developpement.md`](DogApp_Specs/05_plan_developpement.md) (priorité absolue)                                             |
-| Périmètre MVP              | Lot 1 dans [`DogApp_Specs/03_lots_mvp_et_full.md`](DogApp_Specs/03_lots_mvp_et_full.md) : F01–F05, F08, F10, F12 + socle auth/users/dogs/notifs |
+| Élément     | Statut                                                                            |
+| ----------- | --------------------------------------------------------------------------------- |
+| Code        | **Monorepo opérationnel** — `apps/api`, `apps/mobile`, `apps/web`, `packages/*`   |
+| Git         | **17 commits** sur `master`, synchronisé avec `origin/master`                     |
+| Qualité     | `pnpm typecheck` OK · **92 tests** OK · couverture API **~70 %** (objectif 80 %)  |
+| Build       | API + web OK · **mobile échoue** (`react-native-web` manquant pour `expo export`) |
+| Infra cloud | **Non provisionnée** par le dev (Neon / Upstash / R2) — `.env.example` en place   |
+| Lot 1 MVP   | **~75 %** : backend quasi complet, mobile avancé, web squelettes                  |
 
-**Règle directrice :** ne pas entamer l’étape N+1 tant que l’étape N n’est pas terminée, testée et CI verte (§16 + Definition of Done §18).
+**Règle directrice :** ne pas valider le Lot 1 tant que DoD §18 non atteinte (coverage, web, E2E, staging).
+
+### Rapport synthétique
+
+**Phase 0 — Fondations : terminée à ~95 %**
+
+- Monorepo pnpm 10 + Turborepo, TypeScript strict, ESLint, Prettier, Husky, commitlint.
+- `@dogapp/types`, `@dogapp/utils` (case snake/camel), `@dogapp/database` (Prisma + adapter Neon).
+- Schéma Prisma complet (tous modèles specs) + migration `20260516000000_init` + seed (races, flags, check-up).
+- API NestJS Fastify : `/api/v1`, Swagger `/api/docs`, intercepteurs (transform, logging, idempotence), filtres RFC 7807, `DogOwnerGuard`.
+- Auth (register, login, refresh opaque, logout, revoke-all), Users, Dogs, Storage R2 (presigned + mock local).
+- BullMQ (`QueueModule`) + `NotificationProcessor` pour rappels J-30/14/7/1.
+- CI GitHub Actions + Dockerfile API.
+
+**Phase 1 — Santé MVP : en cours (~70 %)**
+
+| Feature        | Backend                    | Mobile                  | Web           | Tests service |
+| -------------- | -------------------------- | ----------------------- | ------------- | ------------- |
+| F01 Carnet     | OK                         | OK (`useHealthRecords`) | Page statique | OK            |
+| F02 Rappels    | OK + BullMQ                | OK                      | Page statique | OK            |
+| F03 Symptômes  | OK + photo                 | OK                      | Page statique | OK            |
+| F04 Médication | OK + doses                 | OK                      | Page statique | OK            |
+| F05 Poids      | OK + plages race           | OK                      | Page statique | OK            |
+| F08 Hygiène    | OK                         | OK                      | Page statique | OK            |
+| F10 Vétos      | OK + cache Redis           | OK                      | Page statique | **0 %**       |
+| F12 Check-up   | OK                         | OK (flux complet)       | Page statique | Partiel       |
+| Notifs push    | Enregistrement token + log | Expo intégré            | —             | **0 %**       |
+
+**Prochaines priorités (ordre recommandé)**
+
+1. Créer comptes Neon / Upstash / R2 et appliquer migration + seed sur branche dev.
+2. Tests `vets.service` + `notification.service` → couverture globale ≥ 80 %.
+3. Corriger build mobile (`expo install react-native-web` ou retirer `web` des plateformes export).
+4. Brancher le web sur l’API (auth + une feature pilote, ex. carnet).
+5. Parcours E2E #1 : inscription → chien → rappel → marquage effectué.
+6. Lot 2 (F06, F07, F13) uniquement après critères Phase 0→1 du plan §16.
 
 ---
 
@@ -324,9 +370,18 @@ F09 Pedigree, F11 Reproduction (`FeatureFlagGuard`), F14 Social, Stripe — derr
 
 ## Critère de passage Phase 0 → Phase 1
 
-- [ ] Monorepo buildable (`pnpm build`)
-- [ ] Migration Prisma sur Neon dev
-- [ ] Auth + Users + Dogs opérationnels avec tests
-- [ ] `DogOwnerGuard` testé (403 cross-user)
-- [ ] Swagger à jour sur `/api/docs`
-- [ ] CI verte sur la PR foundations
+- [x] Monorepo buildable (`pnpm build` — sauf mobile)
+- [ ] Migration Prisma appliquée sur Neon dev (schéma + migration prêts localement)
+- [x] Auth + Users + Dogs opérationnels avec tests
+- [x] `DogOwnerGuard` testé (403 cross-user)
+- [x] Swagger sur `/api/docs`
+- [x] CI configurée (à valider sur GitHub après fix build mobile)
+
+## Critère de passage Lot 1 MVP (DoD §18)
+
+- [x] Backend Lot 1 implémenté
+- [x] Mobile : écrans principaux + React Query
+- [ ] Web : données interactives branchées API
+- [ ] Coverage services ≥ 80 %
+- [ ] 5 parcours E2E prioritaires (au moins #1)
+- [ ] Staging déployé et validé
