@@ -25,7 +25,7 @@ todos:
     status: completed
   - id: f01-health-records
     content: Phase 1.1 — F01 Carnet santé (backend → mobile → web → tests)
-    status: pending
+    status: in_progress
   - id: f02-reminders
     content: Phase 1.2 — F02 Rappels + jobs BullMQ + idempotence
     status: pending
