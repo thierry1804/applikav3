@@ -5,6 +5,7 @@ import { AuditService } from '../../audit/audit.service';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { sliceForPagination, toPaginatedMeta } from '../../common/utils/response.util';
 import { CreateReminderDto } from './dto/create-reminder.dto';
+import { ReminderJobScheduler } from './reminder.scheduler';
 import { ReminderRepository } from './reminder.repository';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class ReminderService {
   constructor(
     private readonly repository: ReminderRepository,
     private readonly auditService: AuditService,
+    private readonly scheduler: ReminderJobScheduler,
   ) {}
 
   async findAll(
@@ -35,6 +37,7 @@ export class ReminderService {
       recurrenceDays: dto.recurrenceDays ?? null,
     });
     await this.auditService.log(userId, 'CREATE_REMINDER', 'Reminder', reminder.id);
+    await this.scheduler.scheduleJobs(reminder);
     return this.toResponse(reminder);
   }
 
@@ -54,10 +57,15 @@ export class ReminderService {
       dueDate,
     });
     await this.auditService.log(userId, 'DONE_REMINDER', 'Reminder', id);
+    if (existing.recurrenceDays) {
+      await this.scheduler.cancelJobs(id);
+      await this.scheduler.scheduleJobs(updated);
+    }
     return this.toResponse(updated);
   }
 
   async remove(id: string, userId: string): Promise<void> {
+    await this.scheduler.cancelJobs(id);
     await this.repository.softDelete(id);
     await this.auditService.log(userId, 'DELETE_REMINDER', 'Reminder', id);
   }

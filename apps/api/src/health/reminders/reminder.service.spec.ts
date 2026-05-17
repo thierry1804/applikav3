@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { ReminderType } from '@dogapp/types';
 import { mock } from 'jest-mock-extended';
 import type { AuditService } from '../../audit/audit.service';
+import type { ReminderJobScheduler } from './reminder.scheduler';
 import type { ReminderRepository } from './reminder.repository';
 import { ReminderService } from './reminder.service';
 
@@ -23,11 +24,14 @@ describe('ReminderService', () => {
   let service: ReminderService;
   const repository = mock<ReminderRepository>();
   const auditService = mock<AuditService>();
+  const scheduler = mock<ReminderJobScheduler>();
 
   beforeEach(() => {
-    service = new ReminderService(repository, auditService);
+    service = new ReminderService(repository, auditService, scheduler);
     jest.clearAllMocks();
     auditService.log.mockResolvedValue(undefined);
+    scheduler.scheduleJobs.mockResolvedValue(undefined);
+    scheduler.cancelJobs.mockResolvedValue(undefined);
   });
 
   it('findAll returns paginated reminders', async () => {
