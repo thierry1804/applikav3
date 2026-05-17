@@ -1,7 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 import type { EnvConfig } from '../config/env.schema';
 import { PrismaService } from '../prisma/prisma.service';
+
+interface GooglePlaceResult {
+  place_id: string;
+  name: string;
+  vicinity?: string;
+  geometry: { location: { lat: number; lng: number } };
+}
 
 export interface VetPlace {
   placeId: string;
@@ -14,17 +22,74 @@ export interface VetPlace {
 }
 
 @Injectable()
-export class VetsService {
+export class VetsService implements OnModuleDestroy {
+  private readonly logger = new Logger(VetsService.name);
+  private readonly redis: Redis | null;
+
   constructor(
     private readonly config: ConfigService<EnvConfig, true>,
     private readonly prisma: PrismaService,
-  ) {}
+  ) {
+    const url = config.get('REDIS_URL', { infer: true });
+    this.redis = url ? new Redis(url) : null;
+  }
 
-  searchNearby(lat: number, lng: number, radiusKm: number): Promise<{ data: VetPlace[] }> {
-    const apiKey = this.config.get('GOOGLE_PLACES_API_KEY', { infer: true });
-    if (apiKey) {
-      // TODO: call Google Places API + Redis cache 24h
+  async onModuleDestroy(): Promise<void> {
+    await this.redis?.quit();
+  }
+
+  async searchNearby(lat: number, lng: number, radiusKm: number): Promise<{ data: VetPlace[] }> {
+    const cacheKey = `vets:search:${lat.toFixed(4)}:${lng.toFixed(4)}:${radiusKm}`;
+    if (this.redis) {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) {
+        return { data: JSON.parse(cached) as VetPlace[] };
+      }
     }
+
+    const apiKey = this.config.get('GOOGLE_PLACES_API_KEY', { infer: true });
+    let results: VetPlace[];
+
+    if (apiKey) {
+      try {
+        results = await this.fetchGooglePlaces(lat, lng, radiusKm, apiKey);
+      } catch (err) {
+        this.logger.warn(`Google Places API error: ${String(err)}`);
+        results = this.mockVets(lat, lng, radiusKm);
+      }
+    } else {
+      results = this.mockVets(lat, lng, radiusKm);
+    }
+
+    if (this.redis) {
+      await this.redis.setex(cacheKey, 86400, JSON.stringify(results));
+    }
+
+    return { data: results };
+  }
+
+  private async fetchGooglePlaces(
+    lat: number,
+    lng: number,
+    radiusKm: number,
+    apiKey: string,
+  ): Promise<VetPlace[]> {
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radiusKm * 1000}&type=veterinary_care&key=${apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = (await res.json()) as { results: GooglePlaceResult[] };
+    return json.results.map((p) => ({
+      placeId: p.place_id,
+      name: p.name,
+      address: p.vicinity ?? '',
+      phone: null,
+      latitude: p.geometry.location.lat,
+      longitude: p.geometry.location.lng,
+      distanceKm: this.haversineKm(lat, lng, p.geometry.location.lat, p.geometry.location.lng),
+    }));
+  }
+
+  private mockVets(lat: number, lng: number, radiusKm: number): VetPlace[] {
     const mock: VetPlace[] = [
       {
         placeId: 'mock-vet-1',
@@ -45,7 +110,17 @@ export class VetsService {
         distanceKm: 1.2,
       },
     ].filter((v) => v.distanceKm <= radiusKm);
-    return Promise.resolve({ data: mock });
+    return mock;
+  }
+
+  private haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
   async listFavorites(userId: string): Promise<{ data: unknown[] }> {
